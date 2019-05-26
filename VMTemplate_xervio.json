@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+
+  "parameters": {
+    "myVmName": {
+      "type": "string",
+      "minLength": 1,
+      "allowedValues": [
+        "myvm1",
+        "myvm2",
+        "myvm3"
+      ]
+    }
+  },
+
+  "variables": {
+    "nicname": "[concat(parameters('myVmName'), 'nic')]"
+  },
+
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "xervio-edureka2",
+      "location": "UK South",
+      "apiVersion": "2018-10-01",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.20.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "SALES",
+            "properties": {
+              "addressPrefix": "10.20.1.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "myipaddress2",
+      "apiVersion": "2018-10-01",
+      "location": "UK South",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2018-10-01",
+      "location": "UK South",
+      "name": "[variables('nicname')]",
+
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'myipaddress2')]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'xervio-edureka2', 'SALES' )]"
+              },
+              "privateIPAllocationMethod": "Dynamic"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'myipaddress2')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'xervio-edureka2')]"
+      ]
+
+    },
+    {
+      "name": "myvm1",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "UK South",
+      "apiVersion": "2018-06-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('nicname'))]"
+      ],
+      "tags": {
+        "displayName": "myvm1"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_DS1_v2"
+        },
+        "osProfile": {
+          "computerName": "myvm1",
+          "adminUsername": "xervio",
+          "adminPassword": "Netsuite2018"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicname'))]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+
+  "outputs": {
+    "myvirtualNetwork": {
+      "type": "object",
+      "value": "[reference('xervio-edureka2')]"
+    }
+  }
+
+}
